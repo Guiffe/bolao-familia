@@ -24,7 +24,7 @@ export function Login({ onLogin }: LoginProps) {
 
     try {
       // 1. Verifica se o usuário já existe (usando ilike para ignorar maiúsculas/minúsculas)
-      const { data: usuarioExistente, error: erroBusca } = await supabase
+      const { data: usuarioExistente } = await supabase
         .from('usuarios')
         .select('*')
         .ilike('nome', nome.trim())

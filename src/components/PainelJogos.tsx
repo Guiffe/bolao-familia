@@ -9,7 +9,6 @@ interface PainelJogosProps {
   onPalpiteSalvo: () => void;
 }
 
-// Função auxiliar para mapear o nome do país para o código de imagem do CDN
 const obterCodigoBandeira = (nomeTime: string) => {
   const mapeamento: Record<string, string> = {
     'México': 'mx',
@@ -128,10 +127,6 @@ export function PainelJogos({ usuario, jogosGlobais, palpitesGlobais, onPalpiteS
           const palpiteAtual = palpites[jogo.id] || { a: '', b: '' };
           const jaTemPalpiteSalvo = palpitesGlobais.some(p => p.usuario_id === usuario.id && p.jogo_id === jogo.id);
 
-          // Remove carimbos de texto antigos se sobrarem do banco
-          const nomeTimeA = jogo.time_a.replace(/^[A-Z]{2}\s+/, '');
-          const nomeTimeB = jogo.time_b.replace(/^[A-Z]{2}\s+/, '');
-
           return (
             <div key={jogo.id} style={{ 
               backgroundColor: '#ffffff', padding: '15px', borderRadius: '12px', 
@@ -161,9 +156,8 @@ export function PainelJogos({ usuario, jogosGlobais, palpitesGlobais, onPalpiteS
               </p>
               
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
-                {/* Time A + Imagem da Bandeira Redonda */}
                 <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
-                  <span style={{ fontWeight: 'bold', fontSize: '15px', color: '#222', textAlign: 'right' }}>{nomeTimeA}</span>
+                  <span style={{ fontWeight: 'bold', fontSize: '15px', color: '#222', textAlign: 'right' }}>{jogo.time_a}</span>
                   <img 
                     src={`https://flagcdn.com/w40/${obterCodigoBandeira(jogo.time_a)}.png`} 
                     alt="" 
@@ -199,14 +193,13 @@ export function PainelJogos({ usuario, jogosGlobais, palpitesGlobais, onPalpiteS
                   }} 
                 />
                 
-                {/* Imagem da Bandeira Redonda + Time B */}
                 <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: '8px' }}>
                   <img 
                     src={`https://flagcdn.com/w40/${obterCodigoBandeira(jogo.time_b)}.png`} 
                     alt="" 
                     style={{ width: '22px', height: '22px', borderRadius: '50%', objectFit: 'cover', boxShadow: '0 1px 3px rgba(0,0,0,0.15)' }} 
                   />
-                  <span style={{ fontWeight: 'bold', fontSize: '15px', color: '#222', textAlign: 'left' }}>{nomeTimeB}</span>
+                  <span style={{ fontWeight: 'bold', fontSize: '15px', color: '#222', textAlign: 'left' }}>{jogo.time_b}</span>
                 </div>
               </div>
               

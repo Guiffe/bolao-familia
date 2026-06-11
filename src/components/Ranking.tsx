@@ -55,11 +55,21 @@ export function Ranking({ jogosGlobais, palpitesGlobais, usuariosGlobais }: Rank
                 {item.nome}
               </span>
             </div>
-            <div style={{ display: 'flex', gap: '2px' }}>
-              {Array.from({ length: item.trofeus }).map((_, i) => (
-                <span key={i} style={{ fontSize: '18px' }}>🏆</span>
-              ))}
-              {item.trofeus === 0 && <span style={{ fontSize: '13px', color: '#aaa' }}>Zerado 😅</span>}
+            
+            {/* Visual Limpo: Número + Um único troféu ao lado */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+              {item.trofeus > 0 ? (
+                <>
+                  <span style={{ fontSize: '18px', fontWeight: 'bold', color: '#002776' }}>
+                    {item.trofeus}
+                  </span>
+                  <span style={{ fontSize: '18px' }}>🏆</span>
+                </>
+              ) : (
+                <span style={{ fontSize: '13px', color: '#aaa', fontStyle: 'italic' }}>
+                  Zerado 😅
+                </span>
+              )}
             </div>
           </div>
         ))}

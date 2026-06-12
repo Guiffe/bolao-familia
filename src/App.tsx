@@ -183,7 +183,8 @@ function App() {
                 <PainelJogos 
                   usuario={usuarioAtual} 
                   jogosGlobais={jogos} 
-                  palpitesGlobais={palpites} 
+                  palpitesGlobais={palpites}
+                  usuariosGlobais={usuarios}
                   onPalpiteSalvo={carregarDadosGlobais} 
                 />
               ) : (

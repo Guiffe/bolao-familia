@@ -25,8 +25,7 @@ const obterCodigoBandeira = (nomeTime: string) => {
 
 export function PainelJogos({ usuario, jogosGlobais, palpitesGlobais, usuariosGlobais, onPalpiteSalvo }: PainelJogosProps) {
   const [palpites, setPalpites] = useState<Record<number, { a: string, b: string }>>({});
-  // Novo estado para controlar o filtro visual da tela
-  const [filtro, setFiltro] = useState<'abertos' | 'encerrados'>('abertos');
+  const [filtro, setFiltro] = useState<'proximos' | 'andamento' | 'encerrados'>('proximos');
 
   useEffect(() => {
     const meusPalpites = palpitesGlobais.filter(p => p.usuario_id === usuario.id);
@@ -66,35 +65,45 @@ export function PainelJogos({ usuario, jogosGlobais, palpitesGlobais, usuariosGl
     }
   };
 
-  // Separa a lógica da data para podermos filtrar a lista antes de desenhar na tela
   const agora = new Date();
   
   const jogosFiltrados = jogosGlobais.filter(jogo => {
     const dataJogo = new Date(jogo.data_hora);
-    const jogoBloqueado = jogo.status === 'Fechado' || agora >= dataJogo;
     
-    if (filtro === 'abertos') return !jogoBloqueado;
-    return jogoBloqueado;
+    const jaComecou = agora >= dataJogo;
+    const jaFoiFechado = jogo.status === 'Fechado';
+
+    if (filtro === 'proximos') return !jaComecou && !jaFoiFechado;
+    if (filtro === 'andamento') return jaComecou && !jaFoiFechado;
+    return jaFoiFechado;
   });
 
   return (
     <div style={{ paddingBottom: '40px' }}>
       
-      {/* Botões de Filtro (Pílulas) */}
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', justifyContent: 'center' }}>
+      <div style={{ display: 'flex', gap: '6px', marginBottom: '20px', justifyContent: 'center' }}>
         <button 
-          onClick={() => setFiltro('abertos')}
+          onClick={() => setFiltro('proximos')}
           style={{ 
-            padding: '8px 20px', borderRadius: '20px', border: 'none', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px',
-            backgroundColor: filtro === 'abertos' ? '#009c3b' : '#e0e0e0', 
-            color: filtro === 'abertos' ? '#fff' : '#666'
+            flex: 1, padding: '8px 10px', borderRadius: '20px', border: 'none', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px',
+            backgroundColor: filtro === 'proximos' ? '#009c3b' : '#e0e0e0', 
+            color: filtro === 'proximos' ? '#fff' : '#666'
           }}>
           Próximos
         </button>
         <button 
+          onClick={() => setFiltro('andamento')}
+          style={{ 
+            flex: 1, padding: '8px 10px', borderRadius: '20px', border: 'none', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px',
+            backgroundColor: filtro === 'andamento' ? '#ffdf00' : '#e0e0e0', 
+            color: filtro === 'andamento' ? '#002776' : '#666'
+          }}>
+          ⚡ Em Jogo
+        </button>
+        <button 
           onClick={() => setFiltro('encerrados')}
           style={{ 
-            padding: '8px 20px', borderRadius: '20px', border: 'none', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px',
+            flex: 1, padding: '8px 10px', borderRadius: '20px', border: 'none', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px',
             backgroundColor: filtro === 'encerrados' ? '#888' : '#e0e0e0', 
             color: filtro === 'encerrados' ? '#fff' : '#666'
           }}>
@@ -104,8 +113,8 @@ export function PainelJogos({ usuario, jogosGlobais, palpitesGlobais, usuariosGl
       
       <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
         {jogosFiltrados.length === 0 ? (
-          <p style={{ textAlign: 'center', color: '#888', marginTop: '20px' }}>
-            Nenhum jogo nesta categoria.
+          <p style={{ textAlign: 'center', color: '#888', marginTop: '20px', fontSize: '14px', fontStyle: 'italic' }}>
+            Nenhum jogo nesta categoria no momento.
           </p>
         ) : (
           jogosFiltrados.map(jogo => {
@@ -113,17 +122,11 @@ export function PainelJogos({ usuario, jogosGlobais, palpitesGlobais, usuariosGl
             const dataFormatada = dataJogo.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
             const horaFormatada = dataJogo.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
-            const jogoBloqueado = jogo.status === 'Fechado' || agora >= dataJogo;
+            const jaComecou = agora >= dataJogo;
+            const jaFoiFechado = jogo.status === 'Fechado';
+            const jogoBloqueado = jaFoiFechado || jaComecou;
 
-            let textoTempo = '';
-            if (!jogoBloqueado) {
-              const diffMs = dataJogo.getTime() - agora.getTime();
-              const diffHoras = Math.floor(diffMs / (1000 * 60 * 60));
-              const diffDias = Math.floor(diffHoras / 24);
-              if (diffHoras < 24) textoTempo = `⚠️ Fecha em ${diffHoras}h`;
-              else textoTempo = `⏳ Restam ${diffDias} dias`;
-            }
-
+            // A LINHA CORRIGIDA SEM O TEMPLATES AQUI 👇
             const palpiteAtual = palpites[jogo.id] || { a: '', b: '' };
             const jaTemPalpiteSalvo = palpitesGlobais.some(p => p.usuario_id === usuario.id && p.jogo_id === jogo.id);
             const palpitesDesteJogo = palpitesGlobais.filter(p => p.jogo_id === jogo.id);
@@ -132,19 +135,24 @@ export function PainelJogos({ usuario, jogosGlobais, palpitesGlobais, usuariosGl
               <div key={jogo.id} style={{ 
                 backgroundColor: '#ffffff', padding: '15px', borderRadius: '12px', 
                 boxShadow: '0 2px 8px rgba(0,0,0,0.1)', 
-                borderTop: jogoBloqueado ? '4px solid #ccc' : '4px solid #ffdf00',
-                opacity: jogoBloqueado ? 0.9 : 1
+                borderTop: jaFoiFechado ? '4px solid #ccc' : jaComecou ? '4px solid #ffdf00' : '4px solid #009c3b',
+                opacity: jaFoiFechado ? 0.85 : 1
               }}>
                 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                   <span style={{ 
                     fontSize: '11px', fontWeight: 'bold', padding: '4px 10px', borderRadius: '20px',
-                    backgroundColor: jogoBloqueado ? '#e0e0e0' : jaTemPalpiteSalvo ? '#e8f5e9' : '#fff3e0',
-                    color: jogoBloqueado ? '#777' : jaTemPalpiteSalvo ? '#2e7d32' : '#ef6c00'
+                    backgroundColor: jaFoiFechado ? '#e0e0e0' : jaComecou ? '#fff9c4' : jaTemPalpiteSalvo ? '#e8f5e9' : '#fff3e0',
+                    color: jaFoiFechado ? '#777' : jaComecou ? '#002776' : jaTemPalpiteSalvo ? '#2e7d32' : '#ef6c00'
                   }}>
-                    {jogoBloqueado ? '🔒 Encerrado' : jaTemPalpiteSalvo ? '🟢 Palpitado' : '🔴 Pendente'}
+                    {jaFoiFechado ? '🔒 Encerrado' : jaComecou ? '🔥 Rolando' : jaTemPalpiteSalvo ? '🟢 Palpitado' : '🔴 Pendente'}
                   </span>
-                  {textoTempo && <span style={{ fontSize: '11px', color: '#666', fontWeight: 'bold' }}>{textoTempo}</span>}
+                  
+                  {!jogoBloqueado && (
+                    <span style={{ fontSize: '11px', color: '#666', fontWeight: 'bold' }}>
+                      ⏳ Faltam {Math.floor((dataJogo.getTime() - agora.getTime()) / (1000 * 60 * 60 * 24))} dias
+                    </span>
+                  )}
                 </div>
 
                 <p style={{ margin: '0 0 15px 0', fontSize: '11px', color: '#777', textAlign: 'center', fontWeight: 'bold' }}>

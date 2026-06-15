@@ -113,7 +113,7 @@ export function PainelJogos({ usuario, jogosGlobais, palpitesGlobais, usuariosGl
   // Função auxiliar para renderizar o cabeçalho do dia
   const renderizarNomeData = (dataStr: string) => {
     if (!dataStr) return '';
-    const [ano, mes, dia] = dataStr.split('-');
+    const [, mes, dia] = dataStr.split('-');
     const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
     return `${dia} de ${meses[Number(mes) - 1]}`;
   };

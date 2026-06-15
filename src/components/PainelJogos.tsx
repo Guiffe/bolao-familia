@@ -12,7 +12,6 @@ interface PainelJogosProps {
 
 const obterCodigoBandeira = (nomeTime: string) => {
   const mapeamento: Record<string, string> = {
-    // Grupos A ao H
     'México': 'mx', 'África do Sul': 'za', 'Coreia do Sul': 'kr', 'República Tcheca': 'cz',
     'Canadá': 'ca', 'Bósnia e Herzegovina': 'ba', 'Estados Unidos': 'us', 'Paraguai': 'py',
     'Catar': 'qa', 'Suíça': 'ch', 'Brasil': 'br', 'Marrocos': 'ma', 'Haiti': 'ht',
@@ -20,7 +19,6 @@ const obterCodigoBandeira = (nomeTime: string) => {
     'Holanda': 'nl', 'Japão': 'jp', 'Costa do Marfim': 'ci', 'Equador': 'ec', 'Suécia': 'se',
     'Tunísia': 'tn', 'Espanha': 'es', 'Cabo Verde': 'cv', 'Bélgica': 'be', 'Egito': 'eg',
     'Arábia Saudita': 'sa', 'Uruguai': 'uy', 'Irã': 'ir', 'Nova Zelândia': 'nz',
-    // Grupos I ao L (CORRIGIDO)
     'França': 'fr', 'Senegal': 'sn', 'Iraque': 'iq', 'Noruega': 'no',
     'Argentina': 'ar', 'Argélia': 'dz', 'Áustria': 'at', 'Jordânia': 'jo',
     'Portugal': 'pt', 'República Democrática do Congo': 'cd', 'Uzbequistão': 'uz', 'Colômbia': 'co',
@@ -32,6 +30,7 @@ const obterCodigoBandeira = (nomeTime: string) => {
 export function PainelJogos({ usuario, jogosGlobais, palpitesGlobais, usuariosGlobais, onPalpiteSalvo }: PainelJogosProps) {
   const [palpites, setPalpites] = useState<Record<number, { a: string, b: string }>>({});
   const [filtro, setFiltro] = useState<'proximos' | 'andamento' | 'encerrados'>('proximos');
+  const [dataSelecionada, setDataSelecionada] = useState<string>('');
 
   useEffect(() => {
     const meusPalpites = palpitesGlobais.filter(p => p.usuario_id === usuario.id);
@@ -49,7 +48,6 @@ export function PainelJogos({ usuario, jogosGlobais, palpitesGlobais, usuariosGl
 
   const handleSalvarPalpite = async (jogoId: number) => {
     const palpite = palpites[jogoId];
-    
     if (!palpite || palpite.a === '' || palpite.b === '') {
       alert('⚠️ Preencha os gols de ambos os times antes de salvar!');
       return;
@@ -73,76 +71,131 @@ export function PainelJogos({ usuario, jogosGlobais, palpitesGlobais, usuariosGl
 
   const agora = new Date();
   
-  const jogosFiltrados = jogosGlobais.filter(jogo => {
+  // 1. Filtra primeiro pela categoria (Abertos, Rolando, Encerrados)
+  const jogosPorStatus = jogosGlobais.filter(jogo => {
     const dataJogo = new Date(jogo.data_hora);
-    
     const jaComecou = agora >= dataJogo;
     const jaFoiFechado = jogo.status === 'Fechado';
 
     if (filtro === 'proximos') return !jaComecou && !jaFoiFechado;
     if (filtro === 'andamento') return jaComecou && !jaFoiFechado;
     return jaFoiFechado;
-  }).sort((a, b) => {
-    const dataA = new Date(a.data_hora).getTime();
-    const dataB = new Date(b.data_hora).getTime();
-    
-    // Se estiver na aba Encerrados, inverte a ordem (mais recentes no topo)
-    if (filtro === 'encerrados') {
-      return dataB - dataA;
-    }
-    // Para as outras abas, mantém a ordem normal (mais próximos no topo)
-    return dataA - dataB;
   });
+
+  // 2. Extrai as datas únicas (ex: "2026-06-15") dos jogos dessa categoria
+  const datasDisponiveis = Array.from(new Set(jogosPorStatus.map(jogo => {
+    const d = new Date(jogo.data_hora);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  })));
+
+  // Ordena as datas (Decrescente para encerrados, Crescente para o resto)
+  datasDisponiveis.sort((a, b) => {
+    if (filtro === 'encerrados') return new Date(b).getTime() - new Date(a).getTime();
+    return new Date(a).getTime() - new Date(b).getTime();
+  });
+
+  // 3. Garante que sempre exista uma data selecionada ao trocar de aba
+  useEffect(() => {
+    if (datasDisponiveis.length > 0 && !datasDisponiveis.includes(dataSelecionada)) {
+      setDataSelecionada(datasDisponiveis[0]);
+    } else if (datasDisponiveis.length === 0) {
+      setDataSelecionada('');
+    }
+  }, [filtro, jogosGlobais]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 4. Filtra finalmente os jogos para mostrar apenas os da data selecionada
+  const jogosParaRenderizar = jogosPorStatus.filter(jogo => {
+    const d = new Date(jogo.data_hora);
+    const dataFormatada = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    return dataFormatada === dataSelecionada;
+  });
+
+  // Função auxiliar para renderizar o cabeçalho do dia
+  const renderizarNomeData = (dataStr: string) => {
+    if (!dataStr) return '';
+    const [ano, mes, dia] = dataStr.split('-');
+    const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+    return `${dia} de ${meses[Number(mes) - 1]}`;
+  };
 
   return (
     <div style={{ paddingBottom: '40px' }}>
       
+      {/* Botões de Filtro Principal */}
       <div style={{ display: 'flex', gap: '6px', marginBottom: '20px', justifyContent: 'center' }}>
-        <button 
-          onClick={() => setFiltro('proximos')}
-          style={{ 
-            flex: 1, padding: '8px 10px', borderRadius: '20px', border: 'none', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px',
-            backgroundColor: filtro === 'proximos' ? '#009c3b' : '#e0e0e0', 
-            color: filtro === 'proximos' ? '#fff' : '#666'
-          }}>
+        <button onClick={() => setFiltro('proximos')}
+          style={{ flex: 1, padding: '8px 10px', borderRadius: '20px', border: 'none', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px',
+          backgroundColor: filtro === 'proximos' ? '#009c3b' : '#e0e0e0', color: filtro === 'proximos' ? '#fff' : '#666' }}>
           Próximos
         </button>
-        <button 
-          onClick={() => setFiltro('andamento')}
-          style={{ 
-            flex: 1, padding: '8px 10px', borderRadius: '20px', border: 'none', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px',
-            backgroundColor: filtro === 'andamento' ? '#ffdf00' : '#e0e0e0', 
-            color: filtro === 'andamento' ? '#002776' : '#666'
-          }}>
+        <button onClick={() => setFiltro('andamento')}
+          style={{ flex: 1, padding: '8px 10px', borderRadius: '20px', border: 'none', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px',
+          backgroundColor: filtro === 'andamento' ? '#ffdf00' : '#e0e0e0', color: filtro === 'andamento' ? '#002776' : '#666' }}>
           ⚡ Em Jogo
         </button>
-        <button 
-          onClick={() => setFiltro('encerrados')}
-          style={{ 
-            flex: 1, padding: '8px 10px', borderRadius: '20px', border: 'none', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px',
-            backgroundColor: filtro === 'encerrados' ? '#888' : '#e0e0e0', 
-            color: filtro === 'encerrados' ? '#fff' : '#666'
-          }}>
+        <button onClick={() => setFiltro('encerrados')}
+          style={{ flex: 1, padding: '8px 10px', borderRadius: '20px', border: 'none', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px',
+          backgroundColor: filtro === 'encerrados' ? '#888' : '#e0e0e0', color: filtro === 'encerrados' ? '#fff' : '#666' }}>
           Encerrados
         </button>
       </div>
       
+      {/* NOVO: Carrossel Horizontal de Datas (Inspirado na referência) */}
+      {datasDisponiveis.length > 0 && (
+        <div style={{ 
+          display: 'flex', overflowX: 'auto', gap: '10px', paddingBottom: '10px', marginBottom: '20px',
+          scrollbarWidth: 'none', msOverflowStyle: 'none' // Esconde a barra de rolagem
+        }}>
+          {datasDisponiveis.map(dataStr => {
+            const [ano, mes, dia] = dataStr.split('-');
+            const d = new Date(Number(ano), Number(mes) - 1, Number(dia));
+            const nomeSemana = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'][d.getDay()];
+            const isSelecionado = dataSelecionada === dataStr;
+
+            return (
+              <button key={dataStr} onClick={() => setDataSelecionada(dataStr)}
+                style={{
+                  flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                  width: '60px', height: '70px', borderRadius: '16px', cursor: 'pointer', transition: 'all 0.2s',
+                  border: isSelecionado ? '2px solid #009c3b' : '1px solid #ddd',
+                  backgroundColor: isSelecionado ? '#e8f5e9' : '#ffffff',
+                  boxShadow: isSelecionado ? '0 2px 5px rgba(0,156,59,0.2)' : 'none'
+                }}>
+                <span style={{ fontSize: '11px', fontWeight: 'bold', color: isSelecionado ? '#009c3b' : '#888' }}>{nomeSemana}</span>
+                <span style={{ fontSize: '20px', fontWeight: 'bold', color: isSelecionado ? '#002776' : '#333' }}>{dia}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* NOVO: Cabeçalho com o Resumo do Dia Selecionado */}
+      {dataSelecionada && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', padding: '0 5px' }}>
+          <h4 style={{ margin: 0, color: '#333', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '16px' }}>
+            📅 {renderizarNomeData(dataSelecionada)}
+          </h4>
+          <span style={{ backgroundColor: '#e9ecef', padding: '4px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold', color: '#6c757d' }}>
+            {jogosParaRenderizar.length} {jogosParaRenderizar.length === 1 ? 'jogo' : 'jogos'}
+          </span>
+        </div>
+      )}
+
+      {/* Lista de Jogos do Dia Selecionado */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-        {jogosFiltrados.length === 0 ? (
+        {jogosParaRenderizar.length === 0 ? (
           <p style={{ textAlign: 'center', color: '#888', marginTop: '20px', fontSize: '14px', fontStyle: 'italic' }}>
             Nenhum jogo nesta categoria no momento.
           </p>
         ) : (
-          jogosFiltrados.map(jogo => {
+          jogosParaRenderizar.map(jogo => {
             const dataJogo = new Date(jogo.data_hora);
-            const dataFormatada = dataJogo.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
             const horaFormatada = dataJogo.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
             const jaComecou = agora >= dataJogo;
             const jaFoiFechado = jogo.status === 'Fechado';
             const jogoBloqueado = jaFoiFechado || jaComecou;
 
-            // A LINHA CORRIGIDA SEM O TEMPLATES AQUI 👇
             const palpiteAtual = palpites[jogo.id] || { a: '', b: '' };
             const jaTemPalpiteSalvo = palpitesGlobais.some(p => p.usuario_id === usuario.id && p.jogo_id === jogo.id);
             const palpitesDesteJogo = palpitesGlobais.filter(p => p.jogo_id === jogo.id);
@@ -164,15 +217,13 @@ export function PainelJogos({ usuario, jogosGlobais, palpitesGlobais, usuariosGl
                     {jaFoiFechado ? '🔒 Encerrado' : jaComecou ? '🔥 Rolando' : jaTemPalpiteSalvo ? '🟢 Palpitado' : '🔴 Pendente'}
                   </span>
                   
-                  {!jogoBloqueado && (
-                    <span style={{ fontSize: '11px', color: '#666', fontWeight: 'bold' }}>
-                      ⏳ Faltam {Math.floor((dataJogo.getTime() - agora.getTime()) / (1000 * 60 * 60 * 24))} dias
-                    </span>
-                  )}
+                  <span style={{ fontSize: '12px', color: '#555', fontWeight: 'bold', backgroundColor: '#f1f3f5', padding: '4px 10px', borderRadius: '6px' }}>
+                    🕒 {horaFormatada}
+                  </span>
                 </div>
 
                 <p style={{ margin: '0 0 15px 0', fontSize: '11px', color: '#777', textAlign: 'center', fontWeight: 'bold' }}>
-                  GRUPO {jogo.grupo} • {dataFormatada} às {horaFormatada}
+                  GRUPO {jogo.grupo}
                 </p>
                 
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
@@ -198,7 +249,7 @@ export function PainelJogos({ usuario, jogosGlobais, palpitesGlobais, usuariosGl
                 {jogoBloqueado ? (
                   <div style={{ marginTop: '20px', padding: '12px', backgroundColor: '#f8f9fa', borderRadius: '8px', border: '1px solid #e9ecef' }}>
                     <p style={{ margin: '0 0 10px 0', fontSize: '13px', fontWeight: 'bold', color: '#495057', textAlign: 'center' }}>
-                      👀 Palpites da Família
+                      👀 Palpites
                     </p>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                       {palpitesDesteJogo.length > 0 ? (
@@ -222,8 +273,7 @@ export function PainelJogos({ usuario, jogosGlobais, palpitesGlobais, usuariosGl
                     </div>
                   </div>
                 ) : (
-                  <button 
-                    onClick={() => handleSalvarPalpite(jogo.id)}
+                  <button onClick={() => handleSalvarPalpite(jogo.id)}
                     style={{ marginTop: '15px', width: '100%', padding: '12px', border: 'none', borderRadius: '6px', fontSize: '15px', fontWeight: 'bold', backgroundColor: '#009c3b', color: '#fff', cursor: 'pointer' }}>
                     Salvar Palpite
                   </button>

@@ -12,13 +12,19 @@ interface PainelJogosProps {
 
 const obterCodigoBandeira = (nomeTime: string) => {
   const mapeamento: Record<string, string> = {
+    // Grupos A ao H
     'México': 'mx', 'África do Sul': 'za', 'Coreia do Sul': 'kr', 'República Tcheca': 'cz',
     'Canadá': 'ca', 'Bósnia e Herzegovina': 'ba', 'Estados Unidos': 'us', 'Paraguai': 'py',
     'Catar': 'qa', 'Suíça': 'ch', 'Brasil': 'br', 'Marrocos': 'ma', 'Haiti': 'ht',
     'Escócia': 'gb-sct', 'Austrália': 'au', 'Turquia': 'tr', 'Alemanha': 'de', 'Curaçao': 'cw',
     'Holanda': 'nl', 'Japão': 'jp', 'Costa do Marfim': 'ci', 'Equador': 'ec', 'Suécia': 'se',
     'Tunísia': 'tn', 'Espanha': 'es', 'Cabo Verde': 'cv', 'Bélgica': 'be', 'Egito': 'eg',
-    'Arábia Saudita': 'sa', 'Uruguai': 'uy', 'Irã': 'ir', 'Nova Zelândia': 'nz'
+    'Arábia Saudita': 'sa', 'Uruguai': 'uy', 'Irã': 'ir', 'Nova Zelândia': 'nz',
+    // Grupos I ao L (CORRIGIDO)
+    'França': 'fr', 'Senegal': 'sn', 'Iraque': 'iq', 'Noruega': 'no',
+    'Argentina': 'ar', 'Argélia': 'dz', 'Áustria': 'at', 'Jordânia': 'jo',
+    'Portugal': 'pt', 'República Democrática do Congo': 'cd', 'Uzbequistão': 'uz', 'Colômbia': 'co',
+    'Inglaterra': 'gb-eng', 'Croácia': 'hr', 'Gana': 'gh', 'Panamá': 'pa'
   };
   return mapeamento[nomeTime.trim()] || 'un';
 };
@@ -76,6 +82,16 @@ export function PainelJogos({ usuario, jogosGlobais, palpitesGlobais, usuariosGl
     if (filtro === 'proximos') return !jaComecou && !jaFoiFechado;
     if (filtro === 'andamento') return jaComecou && !jaFoiFechado;
     return jaFoiFechado;
+  }).sort((a, b) => {
+    const dataA = new Date(a.data_hora).getTime();
+    const dataB = new Date(b.data_hora).getTime();
+    
+    // Se estiver na aba Encerrados, inverte a ordem (mais recentes no topo)
+    if (filtro === 'encerrados') {
+      return dataB - dataA;
+    }
+    // Para as outras abas, mantém a ordem normal (mais próximos no topo)
+    return dataA - dataB;
   });
 
   return (

@@ -71,7 +71,6 @@ export function PainelJogos({ usuario, jogosGlobais, palpitesGlobais, usuariosGl
 
   const agora = new Date();
   
-  // 1. Filtra primeiro pela categoria (Abertos, Rolando, Encerrados)
   const jogosPorStatus = jogosGlobais.filter(jogo => {
     const dataJogo = new Date(jogo.data_hora);
     const jaComecou = agora >= dataJogo;
@@ -82,19 +81,16 @@ export function PainelJogos({ usuario, jogosGlobais, palpitesGlobais, usuariosGl
     return jaFoiFechado;
   });
 
-  // 2. Extrai as datas únicas (ex: "2026-06-15") dos jogos dessa categoria
   const datasDisponiveis = Array.from(new Set(jogosPorStatus.map(jogo => {
     const d = new Date(jogo.data_hora);
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   })));
 
-  // Ordena as datas (Decrescente para encerrados, Crescente para o resto)
   datasDisponiveis.sort((a, b) => {
     if (filtro === 'encerrados') return new Date(b).getTime() - new Date(a).getTime();
     return new Date(a).getTime() - new Date(b).getTime();
   });
 
-  // 3. Garante que sempre exista uma data selecionada ao trocar de aba
   useEffect(() => {
     if (datasDisponiveis.length > 0 && !datasDisponiveis.includes(dataSelecionada)) {
       setDataSelecionada(datasDisponiveis[0]);
@@ -103,14 +99,12 @@ export function PainelJogos({ usuario, jogosGlobais, palpitesGlobais, usuariosGl
     }
   }, [filtro, jogosGlobais]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // 4. Filtra finalmente os jogos para mostrar apenas os da data selecionada
   const jogosParaRenderizar = jogosPorStatus.filter(jogo => {
     const d = new Date(jogo.data_hora);
     const dataFormatada = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     return dataFormatada === dataSelecionada;
   });
 
-  // Função auxiliar para renderizar o cabeçalho do dia
   const renderizarNomeData = (dataStr: string) => {
     if (!dataStr) return '';
     const [, mes, dia] = dataStr.split('-');
@@ -121,7 +115,6 @@ export function PainelJogos({ usuario, jogosGlobais, palpitesGlobais, usuariosGl
   return (
     <div style={{ paddingBottom: '40px' }}>
       
-      {/* Botões de Filtro Principal */}
       <div style={{ display: 'flex', gap: '6px', marginBottom: '20px', justifyContent: 'center' }}>
         <button onClick={() => setFiltro('proximos')}
           style={{ flex: 1, padding: '8px 10px', borderRadius: '20px', border: 'none', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px',
@@ -140,12 +133,8 @@ export function PainelJogos({ usuario, jogosGlobais, palpitesGlobais, usuariosGl
         </button>
       </div>
       
-      {/* NOVO: Carrossel Horizontal de Datas (Inspirado na referência) */}
       {datasDisponiveis.length > 0 && (
-        <div style={{ 
-          display: 'flex', overflowX: 'auto', gap: '10px', paddingBottom: '10px', marginBottom: '20px',
-          scrollbarWidth: 'none', msOverflowStyle: 'none' // Esconde a barra de rolagem
-        }}>
+        <div style={{ display: 'flex', overflowX: 'auto', gap: '10px', paddingBottom: '10px', marginBottom: '20px', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
           {datasDisponiveis.map(dataStr => {
             const [ano, mes, dia] = dataStr.split('-');
             const d = new Date(Number(ano), Number(mes) - 1, Number(dia));
@@ -169,7 +158,6 @@ export function PainelJogos({ usuario, jogosGlobais, palpitesGlobais, usuariosGl
         </div>
       )}
 
-      {/* NOVO: Cabeçalho com o Resumo do Dia Selecionado */}
       {dataSelecionada && (
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', padding: '0 5px' }}>
           <h4 style={{ margin: 0, color: '#333', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '16px' }}>
@@ -181,7 +169,6 @@ export function PainelJogos({ usuario, jogosGlobais, palpitesGlobais, usuariosGl
         </div>
       )}
 
-      {/* Lista de Jogos do Dia Selecionado */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
         {jogosParaRenderizar.length === 0 ? (
           <p style={{ textAlign: 'center', color: '#888', marginTop: '20px', fontSize: '14px', fontStyle: 'italic' }}>
@@ -232,13 +219,28 @@ export function PainelJogos({ usuario, jogosGlobais, palpitesGlobais, usuariosGl
                     <img src={`https://flagcdn.com/w40/${obterCodigoBandeira(jogo.time_a)}.png`} alt="" style={{ width: '22px', height: '22px', borderRadius: '50%', objectFit: 'cover' }} />
                   </div>
                   
-                  <input type="number" min="0" placeholder="-" value={palpiteAtual.a} onChange={(e) => handleMudarPlacar(jogo.id, 'a', e.target.value)} disabled={jogoBloqueado}
-                    style={{ width: '40px', height: '40px', fontSize: '18px', fontWeight: 'bold', textAlign: 'center', borderRadius: '6px', border: '1px solid #ccc', outline: 'none', backgroundColor: jogoBloqueado ? '#e9ecef' : '#f9f9f9', color: jogoBloqueado ? '#6c757d' : '#1a1a1a' }} />
-                  
-                  <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#999' }}>X</span>
-                  
-                  <input type="number" min="0" placeholder="-" value={palpiteAtual.b} onChange={(e) => handleMudarPlacar(jogo.id, 'b', e.target.value)} disabled={jogoBloqueado}
-                    style={{ width: '40px', height: '40px', fontSize: '18px', fontWeight: 'bold', textAlign: 'center', borderRadius: '6px', border: '1px solid #ccc', outline: 'none', backgroundColor: jogoBloqueado ? '#e9ecef' : '#f9f9f9', color: jogoBloqueado ? '#6c757d' : '#1a1a1a' }} />
+                  {/* ALTERAÇÃO AQUI: Se o jogo acabou, mostra o resultado real em azul e amarelo destacado */}
+                  {jaFoiFechado ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <span style={{ width: '40px', height: '40px', fontSize: '20px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '6px', backgroundColor: '#002776', color: '#ffdf00', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }}>
+                        {jogo.gols_a_real}
+                      </span>
+                      <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#666' }}>X</span>
+                      <span style={{ width: '40px', height: '40px', fontSize: '20px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '6px', backgroundColor: '#002776', color: '#ffdf00', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }}>
+                        {jogo.gols_b_real}
+                      </span>
+                    </div>
+                  ) : (
+                    <>
+                      <input type="number" min="0" placeholder="-" value={palpiteAtual.a} onChange={(e) => handleMudarPlacar(jogo.id, 'a', e.target.value)} disabled={jogoBloqueado}
+                        style={{ width: '40px', height: '40px', fontSize: '18px', fontWeight: 'bold', textAlign: 'center', borderRadius: '6px', border: '1px solid #ccc', outline: 'none', backgroundColor: jogoBloqueado ? '#e9ecef' : '#f9f9f9', color: jogoBloqueado ? '#6c757d' : '#1a1a1a' }} />
+                      
+                      <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#999' }}>X</span>
+                      
+                      <input type="number" min="0" placeholder="-" value={palpiteAtual.b} onChange={(e) => handleMudarPlacar(jogo.id, 'b', e.target.value)} disabled={jogoBloqueado}
+                        style={{ width: '40px', height: '40px', fontSize: '18px', fontWeight: 'bold', textAlign: 'center', borderRadius: '6px', border: '1px solid #ccc', outline: 'none', backgroundColor: jogoBloqueado ? '#e9ecef' : '#f9f9f9', color: jogoBloqueado ? '#6c757d' : '#1a1a1a' }} />
+                    </>
+                  )}
                   
                   <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: '8px' }}>
                     <img src={`https://flagcdn.com/w40/${obterCodigoBandeira(jogo.time_b)}.png`} alt="" style={{ width: '22px', height: '22px', borderRadius: '50%', objectFit: 'cover' }} />
@@ -249,7 +251,7 @@ export function PainelJogos({ usuario, jogosGlobais, palpitesGlobais, usuariosGl
                 {jogoBloqueado ? (
                   <div style={{ marginTop: '20px', padding: '12px', backgroundColor: '#f8f9fa', borderRadius: '8px', border: '1px solid #e9ecef' }}>
                     <p style={{ margin: '0 0 10px 0', fontSize: '13px', fontWeight: 'bold', color: '#495057', textAlign: 'center' }}>
-                      👀 Palpites
+                      👀 Palpites da Família
                     </p>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                       {palpitesDesteJogo.length > 0 ? (

@@ -6,7 +6,18 @@ interface RankingProps {
   usuariosGlobais: Usuario[];
 }
 
-export function Ranking({ jogosGlobais, palpitesGlobais, usuariosGlobais }: RankingProps) {
+// Define o peso/multiplicador de pontos baseado na fase escrita no banco
+const obterPesoFase = (grupo: string) => {
+  const fase = grupo.trim().toLowerCase();
+  if (fase === '16-avos') return 2;
+  if (fase === 'oitavas') return 3;
+  if (fase === 'quartas') return 4;
+  if (fase === 'semifinal') return 5;
+  if (fase.includes('final') || fase === 'terceiro') return 10;
+  return 1; // Fase de Grupos padrão (A, B, C...)
+};
+
+export function Ranking({ jogosGlobais, palindromos, palpitesGlobais, usuariosGlobais }: RankingProps) {
   const jogosFinalizados = jogosGlobais.filter(j => j.gols_a_real !== null && j.gols_b_real !== null);
   const jogosMap = new Map(jogosFinalizados.map(j => [j.id, j]));
 
@@ -17,11 +28,17 @@ export function Ranking({ jogosGlobais, palpitesGlobais, usuariosGlobais }: Rank
     palpitesDoUsuario.forEach(p => {
       const jogo = jogosMap.get(p.jogo_id);
       if (jogo) {
+        const peso = obterPesoFase(jogo.grupo);
+        
+        // Valida tendência (Vencedor ou Empate)
         const acertouTendencia = Math.sign(p.palpite_a - p.palpite_b) === Math.sign(jogo.gols_a_real! - jogo.gols_b_real!);
+        
         if (acertouTendencia) {
-          trofeus += 1;
+          trofeus += 1 * peso; // Pontos por acertar o vencedor/empate
+          
+          // Se cravou o placar exato
           if (p.palpite_a === jogo.gols_a_real && p.palpite_b === jogo.gols_b_real) {
-            trofeus += 1;
+            trofeus += 1 * peso; // Pontos extras pelo placar em cheio
           }
         }
       }
@@ -56,7 +73,6 @@ export function Ranking({ jogosGlobais, palpitesGlobais, usuariosGlobais }: Rank
               </span>
             </div>
             
-            {/* Visual Limpo: Número + Um único troféu ao lado */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
               {item.trofeus > 0 ? (
                 <>

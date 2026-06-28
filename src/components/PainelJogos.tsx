@@ -210,8 +210,8 @@ export function PainelJogos({ usuario, jogosGlobais, palpitesGlobais, usuariosGl
                 </div>
 
                 <p style={{ margin: '0 0 15px 0', fontSize: '11px', color: '#777', textAlign: 'center', fontWeight: 'bold' }}>
-                  GRUPO {jogo.grupo}
-                </p>
+  {jogo.grupo.trim().length > 1 ? jogo.grupo.toUpperCase() : `GRUPO ${jogo.grupo.toUpperCase()}`}
+</p>
                 
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
                   <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>

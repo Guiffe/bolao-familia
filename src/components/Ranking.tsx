@@ -17,7 +17,7 @@ const obterPesoFase = (grupo: string) => {
   return 1; // Fase de Grupos padrão (A, B, C...)
 };
 
-export function Ranking({ jogosGlobais, palindromos, palpitesGlobais, usuariosGlobais }: RankingProps) {
+export function Ranking({ jogosGlobais, palpitesGlobais, usuariosGlobais }: RankingProps) {
   const jogosFinalizados = jogosGlobais.filter(j => j.gols_a_real !== null && j.gols_b_real !== null);
   const jogosMap = new Map(jogosFinalizados.map(j => [j.id, j]));
 

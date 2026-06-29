@@ -6,6 +6,17 @@ import { Ranking } from './components/Ranking';
 import { supabase } from './lib/supabase';
 
 function App() {
+
+  const obterPesoFase = (grupo: string) => {
+  const fase = grupo.trim().toLowerCase();
+  if (fase === '16-avos') return 2;
+  if (fase === 'oitavas') return 3;
+  if (fase === 'quartas') return 4;
+  if (fase === 'semifinal') return 5;
+  if (fase.includes('final') || fase === 'terceiro') return 10;
+  return 1;
+  };
+
   const [usuarioAtual, setUsuarioAtual] = useState<Usuario | null>(null);
   const [abaAtiva, setAbaAtiva] = useState<'jogos' | 'ranking'>('jogos');
   
@@ -63,24 +74,31 @@ function App() {
       const jogosMap = new Map(jogosFinalizados.map(j => [j.id, j]));
 
       const rankingCalculado = listaUsuarios.map(u => {
-        let trofeus = 0;
-        const palpitesDoUsuario = listaPalpites.filter(p => p.usuario_id === u.id);
+      let trofeus = 0;
+      const palpitesDoUsuario = listaPalpites.filter(p => p.usuario_id === u.id);
 
-        palpitesDoUsuario.forEach(p => {
-          const jogo = jogosMap.get(p.jogo_id);
-          if (jogo) {
-            const acertouTendencia = Math.sign(p.palpite_a - p.palpite_b) === Math.sign(jogo.gols_a_real! - jogo.gols_b_real!);
-            if (acertouTendencia) {
-              trofeus += 1;
-              if (p.palpite_a === jogo.gols_a_real && p.palpite_b === jogo.gols_b_real) {
-                trofeus += 1;
-              }
+      palpitesDoUsuario.forEach(p => {
+        const jogo = jogosMap.get(p.jogo_id);
+        if (jogo) {
+          // 1. Pega o peso da fase do jogo
+          const peso = obterPesoFase(jogo.grupo); 
+          
+          const acertouTendencia = Math.sign(p.palpite_a - p.palpite_b) === Math.sign(jogo.gols_a_real! - jogo.gols_b_real!);
+          
+          if (acertouTendencia) {
+            // 2. Multiplica os pontos pelo peso da fase
+            trofeus += 1 * peso; 
+            
+            if (p.palpite_a === jogo.gols_a_real && p.palpite_b === jogo.gols_b_real) {
+              // 3. Multiplica o bônus do placar exato também
+              trofeus += 1 * peso; 
             }
           }
-        });
-
-        return { id: u.id, trofeus };
+        }
       });
+
+      return { id: u.id, trofeus };
+    });
 
       // Ordena o ranking para descobrir as posições
       rankingCalculado.sort((a, b) => b.trofeus - a.trofeus);
